@@ -1,0 +1,115 @@
+package net.k1ra.eizo
+
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material.CircularProgressIndicator
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.FilterQuality
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.layout.ContentScale
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.IO
+import kotlinx.coroutines.launch
+import net.k1ra.eizo.eizo.generated.resources.Res
+import net.k1ra.eizo.eizo.generated.resources.error
+import net.k1ra.hoodies_network_kmm.HoodiesNetworkClient
+import net.k1ra.hoodies_network_kmm.cache.configuration.CacheConfiguration
+import net.k1ra.hoodies_network_kmm.cache.configuration.CacheEnabled
+import net.k1ra.hoodies_network_kmm.result.Failure
+import net.k1ra.hoodies_network_kmm.result.Success
+import org.jetbrains.compose.resources.ExperimentalResourceApi
+import org.jetbrains.compose.resources.painterResource
+import kotlin.time.Duration.Companion.days
+
+private val httpClient = HoodiesNetworkClient.Builder().apply {
+    cacheConfiguration = CacheEnabled(staleDataThreshold = 1000.days) //We'll cache images for a long time
+    retryOnConnectionFailure = true
+    maxRetryLimit = 5
+}.build()
+
+@OptIn(ExperimentalResourceApi::class)
+@Composable
+fun EizoImage(
+    url: String,
+    modifier: Modifier,
+    contentScale: ContentScale = ContentScale.Crop,
+    contentDescription: String? = null,
+    alignment: Alignment = Alignment.Center,
+    alpha: Float = 1.0f,
+    colorFilter: ColorFilter? = null,
+    filterQuality: FilterQuality = FilterQuality.Low,
+    customHeaders: Map<String, String> = mapOf(),
+    customUrlQueryParams: Map<String, String> = mapOf(),
+    customCacheConfiguration: CacheConfiguration? = null,
+    showProgressIndicator: Boolean = true,
+    fallbackPainter: Painter = painterResource(Res.drawable.error),
+    fallbackModifier: Modifier? = null
+) {
+    var bitmap by remember { mutableStateOf(null as ImageBitmap?) }
+    var isLoading by remember { mutableStateOf(true) }
+    var startedLoadingImage by remember { mutableStateOf(false) }
+
+    if (!startedLoadingImage) {
+        startedLoadingImage = true
+        CoroutineScope(Dispatchers.IO).launch {
+            when (val result = httpClient.get<ImageBitmap>(url, customUrlQueryParams, customHeaders, customCacheConfiguration)) {
+                is Success -> CoroutineScope(Dispatchers.Main).launch {
+                    println("NetworkTime: ${result.rawResponse?.networkTimeMs}")
+                    bitmap = result.value
+                    isLoading = false
+                }
+                is Failure -> CoroutineScope(Dispatchers.Main).launch {
+                    isLoading = false
+                    println("ERROR: Failed to load image from $url because of ${result.reason}")
+                }
+            }
+        }
+    }
+
+    Box(
+        modifier = modifier,
+        contentAlignment = Alignment.Center
+    ) {
+
+        if (isLoading) {
+            if (showProgressIndicator) {
+                CircularProgressIndicator(
+                    modifier = Modifier.fillMaxSize(0.8f)
+                )
+            }
+        } else {
+            if (bitmap != null) {
+                Image(
+                    bitmap = bitmap!!,
+                    contentDescription = contentDescription,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = contentScale,
+                    alignment = alignment,
+                    alpha = alpha,
+                    colorFilter = colorFilter,
+                    filterQuality = filterQuality
+                )
+            } else {
+                Image(
+                    painter = fallbackPainter,
+                    contentDescription = contentDescription,
+                    modifier = fallbackModifier ?: Modifier.fillMaxSize(),
+                    contentScale = contentScale,
+                    alignment = alignment,
+                    alpha = alpha,
+                    colorFilter = colorFilter
+                )
+            }
+        }
+    }
+}
