@@ -19,6 +19,7 @@ kotlin {
             kotlinOptions {
                 jvmTarget = "11"
             }
+            publishLibraryVariants("release", "debug")
         }
 
         @OptIn(ExperimentalKotlinGradlePluginApi::class)
