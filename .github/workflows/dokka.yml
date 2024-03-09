@@ -20,7 +20,7 @@ jobs:
           distribution: 'adopt'
 
       - name: Build documentation
-        run: ./gradlew HoodiesNetworkKmm:dokkaHtml
+        run: ./gradlew Eizo:dokkaHtml
         env:
           releaseName: ${{ github.event.release.name }}
 

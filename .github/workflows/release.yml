@@ -24,7 +24,7 @@ jobs:
           xcode-version: latest-stable
 
       - name: Publish
-        run: ./gradlew HoodiesNetworkKmm:publish
+        run: ./gradlew Eizo:publish
         env:
           releaseName: ${{ github.event.release.name }}
           NEXUS_USERNAME: ${{ secrets.NEXUS_USERNAME }}
