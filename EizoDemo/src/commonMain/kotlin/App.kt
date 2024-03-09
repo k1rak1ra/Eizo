@@ -3,7 +3,9 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
@@ -14,6 +16,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import eizoproject.eizodemo.generated.resources.Res
 import eizoproject.eizodemo.generated.resources.person
+import mockwebserver.ServerManager
 import net.k1ra.eizo.EizoImage
 import net.k1ra.hoodies_network_kmm.cache.configuration.CacheDisabled
 import org.jetbrains.compose.resources.ExperimentalResourceApi
@@ -24,8 +27,11 @@ import org.jetbrains.compose.ui.tooling.preview.Preview
 @Composable
 @Preview
 fun App() {
+    ServerManager.start()
+    val imageUrl = "http://localhost:6970/image/2"
+
     MaterialTheme {
-        Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
+        Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()), horizontalAlignment = Alignment.CenterHorizontally) {
             Box(modifier = Modifier.height(16.dp))
             Text("Image that failed to load:", textAlign = TextAlign.Center)
             EizoImage(
@@ -36,14 +42,14 @@ fun App() {
             Box(modifier = Modifier.height(16.dp))
             Text("Image using default cache:", textAlign = TextAlign.Center)
             EizoImage(
-                url = "https://k1ra.net/succubot/image/LDAP-237400003-4d3862a3-69ba-4e89-8459-8b719a6b0fe7",
+                url = imageUrl,
                 modifier = Modifier.size(100.dp).clip(CircleShape)
             )
 
             Box(modifier = Modifier.height(16.dp))
             Text("Image with no caching and loading indicator:", textAlign = TextAlign.Center)
             EizoImage(
-                url = "https://k1ra.net/succubot/image/LDAP-237400003-4d3862a3-69ba-4e89-8459-8b719a6b0fe7",
+                url = imageUrl,
                 modifier = Modifier.size(100.dp).clip(CircleShape),
                 customCacheConfiguration = CacheDisabled()
             )
@@ -51,7 +57,7 @@ fun App() {
             Box(modifier = Modifier.height(16.dp))
             Text("Image with no caching and no loading indicator:", textAlign = TextAlign.Center)
             EizoImage(
-                url = "https://k1ra.net/succubot/image/LDAP-237400003-4d3862a3-69ba-4e89-8459-8b719a6b0fe7",
+                url = imageUrl,
                 modifier = Modifier.size(100.dp).clip(CircleShape),
                 customCacheConfiguration = CacheDisabled(),
                 showProgressIndicator = false

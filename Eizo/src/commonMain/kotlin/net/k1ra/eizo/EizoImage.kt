@@ -16,6 +16,7 @@ import androidx.compose.ui.graphics.FilterQuality
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.testTag
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
@@ -23,6 +24,7 @@ import kotlinx.coroutines.launch
 import net.k1ra.eizo.eizo.generated.resources.Res
 import net.k1ra.eizo.eizo.generated.resources.error
 import net.k1ra.hoodies_network_kmm.HoodiesNetworkClient
+import net.k1ra.hoodies_network_kmm.cache.OptionallyEncryptedCache
 import net.k1ra.hoodies_network_kmm.cache.configuration.CacheConfiguration
 import net.k1ra.hoodies_network_kmm.cache.configuration.CacheEnabled
 import net.k1ra.hoodies_network_kmm.result.Failure
@@ -32,7 +34,7 @@ import org.jetbrains.compose.resources.painterResource
 import kotlin.time.Duration.Companion.days
 
 private val httpClient = HoodiesNetworkClient.Builder().apply {
-    cacheConfiguration = CacheEnabled(staleDataThreshold = 1000.days) //We'll cache images for a long time
+    cacheConfiguration = CacheEnabled(staleDataThreshold = 30.days) //We'll cache images for a long time
     retryOnConnectionFailure = true
     maxRetryLimit = 5
 }.build()
@@ -61,30 +63,48 @@ fun EizoImage(
 
     if (!startedLoadingImage) {
         startedLoadingImage = true
-        CoroutineScope(Dispatchers.IO).launch {
-            when (val result = httpClient.get<ImageBitmap>(url, customUrlQueryParams, customHeaders, customCacheConfiguration)) {
-                is Success -> CoroutineScope(Dispatchers.Main).launch {
-                    println("NetworkTime: ${result.rawResponse?.networkTimeMs}")
-                    bitmap = result.value
-                    isLoading = false
-                }
-                is Failure -> CoroutineScope(Dispatchers.Main).launch {
-                    isLoading = false
-                    println("ERROR: Failed to load image from $url because of ${result.reason}")
+
+        var cacheHit = false
+
+        //Hack to get data from the HoodiesNetwork cache synchronously with no UI state changes
+        val cacheConfig = customCacheConfiguration ?: httpClient.builder.cacheConfiguration
+        if (cacheConfig is CacheEnabled) {
+            val cache = OptionallyEncryptedCache(cacheConfig)
+            val request = httpClient.buildRequestWithUrlQueryParams<ImageBitmap>("GET", url, customUrlQueryParams, customHeaders)
+
+            if (!cache.isDataStale(request)) {
+                bitmap = httpClient.convertResponseBody<ImageBitmap>(cache.getCachedData(request).data)
+                isLoading = false
+                cacheHit = true
+            }
+        }
+
+        //If cache missed, fetch image over the network the normal way...
+        if (!cacheHit) {
+            CoroutineScope(Dispatchers.IO).launch {
+                when (val result = httpClient.get<ImageBitmap>(url, customUrlQueryParams, customHeaders, customCacheConfiguration)) {
+                    is Success -> CoroutineScope(Dispatchers.Main).launch {
+                        bitmap = result.value
+                        isLoading = false
+                    }
+
+                    is Failure -> CoroutineScope(Dispatchers.Main).launch {
+                        isLoading = false
+                        println("ERROR: Failed to load image from $url because of ${result.reason}")
+                    }
                 }
             }
         }
     }
 
     Box(
-        modifier = modifier,
+        modifier = modifier.testTag("eizoBox"),
         contentAlignment = Alignment.Center
     ) {
-
         if (isLoading) {
             if (showProgressIndicator) {
                 CircularProgressIndicator(
-                    modifier = Modifier.fillMaxSize(0.8f)
+                    modifier = Modifier.fillMaxSize(0.8f).testTag("eizoProgressIndicator")
                 )
             }
         } else {
@@ -92,7 +112,7 @@ fun EizoImage(
                 Image(
                     bitmap = bitmap!!,
                     contentDescription = contentDescription,
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier.fillMaxSize().testTag("eizoImageBitmap"),
                     contentScale = contentScale,
                     alignment = alignment,
                     alpha = alpha,
@@ -103,7 +123,7 @@ fun EizoImage(
                 Image(
                     painter = fallbackPainter,
                     contentDescription = contentDescription,
-                    modifier = fallbackModifier ?: Modifier.fillMaxSize(),
+                    modifier = (fallbackModifier ?: Modifier.fillMaxSize()).testTag("eizoFallbackImage"),
                     contentScale = contentScale,
                     alignment = alignment,
                     alpha = alpha,
