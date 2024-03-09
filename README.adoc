@@ -1,0 +1,83 @@
+= Eizo
+:toc:
+:source-highlighter: highlightjs
+
+== Introduction
+
+Eizo is a full-featured KMM network image loading library like Glide
+
+== Features
+
+* Fetches image from a URL via a GET request
+* Supports custom query params and headers for authentication
+* Can automatically show CircularProgressBar when loading
+* Automatically shows a customizable fallback image if loading fails
+* Configurable caching, with optional encryption
+
+== Usage Guide
+
+=== Getting Started
+
+. Integrate this library as a dependency in your project:
+.. Add the Maven repository to your `settings.gradle`
+... `maven("https://k1ra.net/nexus/repository/public")`
+.. Add the dependency:
+... `implementation("net.k1ra.eizo:eizo:latest.release")`
+.. Add the following linker flag to `Other Linker Flags` in your Xcode project:
+... `-lsqlite3`
+.. Due to a bug in Compose resources for iOS, you temporarily need to add the file `Eizo/src/commonMain/composeResources/drawable/error.xml` to the `commonMain/composeResources/drawable` folder of your app
+. Use the `@Composable` `EizoImage` in your project:
+
+[source,kotlin]
+----
+EizoImage(
+    url: String, //Mandatory, your image URL
+    modifier: Modifier, //Mandatory, Modifier for your Image
+    contentScale: ContentScale = ContentScale.Crop, //contentScale property of the Image
+    contentDescription: String? = null, //contentDescription property of the Image
+    alignment: Alignment = Alignment.Center, //alignment property of the Image
+    alpha: Float = 1.0f, //alpha property of the Image
+    colorFilter: ColorFilter? = null, //colorFilter property of the Image
+    filterQuality: FilterQuality = FilterQuality.Low, //filterQuality property of the image
+    customHeaders: Map<String, String> = mapOf(), //Additional HTTP headers to send while requesting your image
+    customUrlQueryParams: Map<String, String> = mapOf(), //Url query parameters to send while requesting your image
+    customCacheConfiguration: CacheConfiguration? = null, //HoodiesNetworkKmm CacheConfiguration object to control caching behavior
+    showProgressIndicator: Boolean = true, //Used to enable/disable the automatic CircularProgressIndicator
+    fallbackPainter: Painter = painterResource(Res.drawable.error), //Alternative Painter to display when the image fails to load
+    fallbackModifier: Modifier? = null //Modifier for the fallbackPainter, if you want to make it smaller, etc
+)
+----
+
+== Usage Examples
+
+There are usage examples in the EizoDemo app in this project
+
+
+== Running Tests
+
+The test classes are all in commonTest, and must be run on an emulator. Kover support for emulator tests is currently WIP.
+
+* EizoTest
+
+
+== Environment Setup
+
+* Since this is a KMM project, a modern version of Android Studio (2023.1.1 or newer) is required
+* Remember to configure Android Studio to use Java 17
+
+== Dokka
+https://k1rak1ra.github.io/Eizo/index.html
+
+== Conduct
+
+This is a professional environment, and you are expected to conduct yourself in a professional and courteous manner.
+If you fail to exhibit appropriate conduct, your contributions and interactions will no longer be welcome here.
+
+== Contributing
+
+* Everyone is welcome and encouraged to contribute.
+If you are looking for a place to start, try working on an unassigned issue with the `good-first-issue` tag.
+* All contributions are expected to conform to standard Kotlin code style and be covered by unit tests.
+* PRs will not be merged if there are failing tests.
+* If you would like to contribute code you can do so through GitHub by forking the repository and sending a pull request.
+* When submitting code, please follow the existing conventions and style in order to keep the code readable.
