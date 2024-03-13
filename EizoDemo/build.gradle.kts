@@ -1,3 +1,5 @@
+import org.jetbrains.compose.desktop.application.dsl.TargetFormat
+
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
     alias(libs.plugins.androidApplication)
@@ -23,8 +25,11 @@ kotlin {
             isStatic = true
         }
     }
+
+    jvm("desktop")
     
     sourceSets {
+        val desktopMain by getting
         
         androidMain.dependencies {
             implementation(libs.compose.ui.tooling.preview)
@@ -38,6 +43,9 @@ kotlin {
             implementation(compose.components.resources)
             implementation(compose.components.uiToolingPreview)
             implementation(project(":Eizo"))
+        }
+        desktopMain.dependencies {
+            implementation(compose.desktop.currentOs)
         }
     }
 }
@@ -76,3 +84,14 @@ android {
     }
 }
 
+compose.desktop {
+    application {
+        mainClass = "MainKt"
+
+        nativeDistributions {
+            targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
+            packageName = "net.k1ra.eizo_demo"
+            packageVersion = "1.0.0"
+        }
+    }
+}

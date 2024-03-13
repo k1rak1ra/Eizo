@@ -44,6 +44,8 @@ kotlin {
         }
     }
 
+    jvm("desktop")
+
     sourceSets {
         commonMain.dependencies {
             api(libs.network)

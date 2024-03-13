@@ -9,7 +9,7 @@ compose-plugin = "1.6.0"
 kotlin = "1.9.22"
 kover = "0.7.6"
 dokka = "1.9.20"
-network = "1.0.6"
+network = "1.0.7"
 
 [libraries]
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
