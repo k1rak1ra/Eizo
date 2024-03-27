@@ -22,7 +22,7 @@ Eizo is a full-featured KMM network image loading library like Glide
 .. Add the Maven repository to your `settings.gradle`
 ... `maven("https://k1ra.net/nexus/repository/public")`
 .. Add the dependency:
-... `implementation("net.k1ra.eizo:eizo:latest.release")`
+... `implementation("net.k1ra.eizo:Eizo:latest.release")`
 .. Add the following linker flag to `Other Linker Flags` in your Xcode project:
 ... `-lsqlite3`
 .. Due to a bug in Compose resources for iOS, you temporarily need to add the file `Eizo/src/commonMain/composeResources/drawable/error.xml` to the `commonMain/composeResources/drawable` folder of your app
