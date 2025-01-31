@@ -1,6 +1,6 @@
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
@@ -19,11 +19,9 @@ import eizoproject.eizodemo.generated.resources.person
 import mockwebserver.ServerManager
 import net.k1ra.eizo.EizoImage
 import net.k1ra.hoodies_network_kmm.cache.configuration.CacheDisabled
-import org.jetbrains.compose.resources.ExperimentalResourceApi
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.ui.tooling.preview.Preview
 
-@OptIn(ExperimentalResourceApi::class)
 @Composable
 @Preview
 fun App() {
@@ -31,7 +29,7 @@ fun App() {
     val imageUrl = "http://localhost:6970/image/2"
 
     MaterialTheme {
-        Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()), horizontalAlignment = Alignment.CenterHorizontally) {
+        Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()), horizontalAlignment = Alignment.CenterHorizontally) {
             Box(modifier = Modifier.height(16.dp))
             Text("Image that failed to load:", textAlign = TextAlign.Center)
             EizoImage(

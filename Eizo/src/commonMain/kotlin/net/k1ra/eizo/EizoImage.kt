@@ -4,6 +4,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material.CircularProgressIndicator
+import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -17,9 +18,9 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.IO
 import kotlinx.coroutines.launch
 import net.k1ra.eizo.eizo.generated.resources.Res
 import net.k1ra.eizo.eizo.generated.resources.error
@@ -29,7 +30,6 @@ import net.k1ra.hoodies_network_kmm.cache.configuration.CacheConfiguration
 import net.k1ra.hoodies_network_kmm.cache.configuration.CacheEnabled
 import net.k1ra.hoodies_network_kmm.result.Failure
 import net.k1ra.hoodies_network_kmm.result.Success
-import org.jetbrains.compose.resources.ExperimentalResourceApi
 import org.jetbrains.compose.resources.painterResource
 import kotlin.time.Duration.Companion.days
 
@@ -39,7 +39,9 @@ private val httpClient = HoodiesNetworkClient.Builder().apply {
     maxRetryLimit = 5
 }.build()
 
-@OptIn(ExperimentalResourceApi::class)
+expect val ioDispatcher: CoroutineDispatcher
+expect fun cacheExecutor(checkLogic: suspend () -> Boolean, networkFetchLogic: () -> Unit)
+
 @Composable
 fun EizoImage(
     url: String,
@@ -61,38 +63,62 @@ fun EizoImage(
     var isLoading by remember { mutableStateOf(true) }
     var startedLoadingImage by remember { mutableStateOf(false) }
 
+    fun loadViaNetwork() = CoroutineScope(ioDispatcher).launch {
+        //If cache missed, fetch image over the network the normal way...
+        when (val result = httpClient.get<ImageBitmap>(
+            url,
+            customUrlQueryParams,
+            customHeaders,
+            customCacheConfiguration
+        )) {
+            is Success -> CoroutineScope(Dispatchers.Main).launch {
+                bitmap = result.value
+                isLoading = false
+            }
+
+            is Failure -> CoroutineScope(Dispatchers.Main).launch {
+                isLoading = false
+                println("ERROR: Failed to load image from $url because of ${result.reason}")
+            }
+        }
+    }
+
     if (!startedLoadingImage) {
         startedLoadingImage = true
 
-        var cacheHit = false
+        if (url.isEmpty()) {
+            isLoading = false
+            println("ERROR: Failed to load image because URL is empty")
 
-        //Hack to get data from the HoodiesNetwork cache synchronously with no UI state changes
-        val cacheConfig = customCacheConfiguration ?: httpClient.builder.cacheConfiguration
-        if (cacheConfig is CacheEnabled) {
-            val cache = OptionallyEncryptedCache(cacheConfig)
-            val request = httpClient.buildRequestWithUrlQueryParams<ImageBitmap>("GET", url, customUrlQueryParams, customHeaders)
+        } else {
 
-            if (!cache.isDataStale(request)) {
-                bitmap = httpClient.convertResponseBody<ImageBitmap>(cache.getCachedData(request).data)
-                isLoading = false
-                cacheHit = true
-            }
-        }
+            //Hack to get data from the HoodiesNetwork cache synchronously with no UI state changes
+            val cacheConfig = customCacheConfiguration ?: httpClient.builder.cacheConfiguration
+            if (cacheConfig is CacheEnabled) {
+                val cache = OptionallyEncryptedCache(cacheConfig)
+                val request = httpClient.buildRequestWithUrlQueryParams<ImageBitmap>(
+                    "GET",
+                    url,
+                    customUrlQueryParams,
+                    customHeaders
+                )
 
-        //If cache missed, fetch image over the network the normal way...
-        if (!cacheHit) {
-            CoroutineScope(Dispatchers.IO).launch {
-                when (val result = httpClient.get<ImageBitmap>(url, customUrlQueryParams, customHeaders, customCacheConfiguration)) {
-                    is Success -> CoroutineScope(Dispatchers.Main).launch {
-                        bitmap = result.value
-                        isLoading = false
-                    }
-
-                    is Failure -> CoroutineScope(Dispatchers.Main).launch {
-                        isLoading = false
-                        println("ERROR: Failed to load image from $url because of ${result.reason}")
-                    }
-                }
+                cacheExecutor(
+                    checkLogic = {
+                        if (!cache.isDataStale(request)) {
+                            bitmap = httpClient.convertResponseBody<ImageBitmap>(
+                                cache.getCachedData(request).data
+                            )
+                            isLoading = false
+                            true
+                        } else {
+                            false
+                        }
+                    },
+                    networkFetchLogic = { loadViaNetwork() }
+                )
+            } else {
+                loadViaNetwork()
             }
         }
     }
