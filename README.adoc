@@ -23,10 +23,6 @@ Eizo is a full-featured KMM network image loading library like Glide
 ... `maven("https://k1ra.net/nexus/repository/public")`
 .. Add the dependency:
 ... `implementation("net.k1ra.eizo:Eizo:latest.release")`
-.. Add the following linker flag to `Other Linker Flags` in your Xcode project:
-... `-lsqlite3`
-.. Due to a bug in Compose resources for iOS, you temporarily need to add the file `Eizo/src/commonMain/composeResources/drawable/error.xml` to the `commonMain/composeResources/drawable` folder of your app
-. Use the `@Composable` `EizoImage` in your project:
 
 [source,kotlin]
 ----
@@ -58,12 +54,6 @@ There are usage examples in the EizoDemo app in this project
 The test classes are all in commonTest, and must be run on an emulator. Kover support for emulator tests is currently WIP.
 
 * EizoTest
-
-
-== Environment Setup
-
-* Since this is a KMM project, a modern version of Android Studio (2023.1.1 or newer) is required
-* Remember to configure Android Studio to use Java 17
 
 == Dokka
 https://k1rak1ra.github.io/Eizo/index.html

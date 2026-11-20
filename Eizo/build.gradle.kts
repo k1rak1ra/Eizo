@@ -1,8 +1,5 @@
-import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
-import org.jetbrains.kotlin.gradle.plugin.KotlinSourceSetTree
-import org.jetbrains.kotlin.gradle.targets.js.webpack.KotlinWebpackConfig
 import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
-import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import org.jetbrains.kotlin.gradle.targets.js.webpack.KotlinWebpackConfig
 
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
@@ -19,11 +16,23 @@ group = "net.k1ra.eizo"
 version = System.getenv("releaseName") ?: "999999.999999.999999"
 
 kotlin {
-    androidTarget {
-        compilerOptions {
-            jvmTarget.set(JvmTarget.JVM_11)
+    android {
+        namespace = "net.k1ra.eizo"
+        compileSdk {
+            //noinspection WrongGradleMethod
+            val (major, minor) = libs.versions.android.compileSdk.get().split(".").map { it.toInt() } + listOf(0)
+            version = release(major) { minorApiLevel = minor }
         }
-        publishLibraryVariants("release", "debug")
+        minSdk = libs.versions.android.minSdk.get().toInt()
+
+        androidResources.enable = true
+
+        withHostTest {
+            enableCoverage = true
+        }
+        withDeviceTest {
+            enableCoverage = true
+        }
     }
     
     listOf(
@@ -74,19 +83,6 @@ kotlin {
     }
 }
 
-android {
-    namespace = "net.k1ra.eizo"
-    compileSdk = libs.versions.android.compileSdk.get().toInt()
-    defaultConfig {
-        minSdk = libs.versions.android.minSdk.get().toInt()
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-    }
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
-    }
-}
-
 publishing {
     repositories {
         maven {
@@ -103,8 +99,8 @@ publishing {
 
 tasks{
     register<Jar>("dokkaJar") {
-        from(dokkaHtml)
-        dependsOn(dokkaHtml)
+        from(dokkaGeneratePublicationHtml)
+        dependsOn(dokkaGeneratePublicationHtml)
         archiveClassifier.set("javadoc")
     }
 }

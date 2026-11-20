@@ -32,5 +32,6 @@ dependencyResolutionManagement {
     }
 }
 
+include(":EizoDemoAndroid")
 include(":EizoDemo")
 include(":Eizo")
